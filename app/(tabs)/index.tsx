@@ -1,6 +1,7 @@
 import * as Location from 'expo-location';
 import { useEffect, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import MapView, { Marker } from 'react-native-maps';
 
 export default function App() {
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
@@ -10,7 +11,7 @@ export default function App() {
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        setErrorMsg('Permission to access location was denied');
+        setErrorMsg('Permission refusée pour accéder à la localisation.');
         return;
       }
 
@@ -19,29 +20,56 @@ export default function App() {
     })();
   }, []);
 
-  let text = 'Waiting...';
-  if (errorMsg) {
-    text = errorMsg;
-  } else if (location) {
-    text = JSON.stringify(location.coords, null, 2);
+  if (!location) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" />
+        <Text>Chargement de la localisation...</Text>
+        {errorMsg && <Text style={styles.error}>{errorMsg}</Text>}
+      </View>
+    );
   }
+
+  const { latitude, longitude } = location.coords;
 
   return (
     <View style={styles.container}>
-      <Text style={styles.paragraph}>{text}</Text>
+      <MapView
+        style={styles.map}
+        initialRegion={{
+          latitude,
+          longitude,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
+        }}
+        showsUserLocation={true}
+      >
+        <Marker
+          coordinate={{ latitude, longitude }}
+          title="Vous êtes ici"
+        />
+      </MapView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+   top: 50,
+    flex: 1,
+  },
+  loadingContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 20,
   },
-  paragraph: {
-    fontSize: 16,
+  map: {
+    flex: 1,
+  },
+  error: {
+    marginTop: 10,
+    color: 'red',
     textAlign: 'center',
   },
 });
